@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blogs - PulseGurgaon</title>
+
+<style>
+body { margin:0; font-family:sans-serif; background:#f4f6f9; }
+
+header {
+  background:linear-gradient(90deg,#ff3b3b,#ff0000);
+  color:white;
+  padding:15px;
+  font-size:20px;
+}
+
+.container { padding:10px; }
+
+.card {
+  background:white;
+  padding:15px;
+  margin-bottom:10px;
+  border-radius:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  cursor:pointer;
+}
+
+.card:hover {
+  transform:scale(1.02);
+  transition:0.2s;
+}
+
+.category {
+  font-size:12px;
+  color:red;
+  font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>PulseGurgaon Blogs</header>
+
+<div class="container" id="blogs"></div>
+
+<script>
+
+async function loadBlogs(){
+  let res = await fetch('/api/blogs');
+  let data = await res.json();
+
+  document.getElementById('blogs').innerHTML = data.map(b=>`
+    <div class="card" onclick="openBlog('${b.id}')">
+      <div class="category">${b.category || "General"}</div>
+      <h3>${b.title}</h3>
+      <p>${b.content.substring(0,120)}...</p>
+    </div>
+  `).join('');
+}
+
+function openBlog(id){
+  window.location.href = "blog-view.html?id=" + id;
+}
+
+loadBlogs();
+
+</script>
+
+</body>
+</html>
