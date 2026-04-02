@@ -179,7 +179,7 @@ async function loadNews(){
   let data = await res.json();
 
   document.getElementById('home').innerHTML = data.map(n=>`
-    <div class="card" onclick="openArticle('${n.id}')">
+    <div class="card" onclick="window.location.href='article.html?id=${n.id}'">
       <div class="category">${n.category}</div>
       <h3>${n.title}</h3>
       ${n.image ? `<img src="${n.image}">` : ""}
