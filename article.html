@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Article - PulseGurgaon</title>
+
+<style>
+body {
+  margin:0;
+  font-family:sans-serif;
+  background:#f4f6f9;
+}
+
+header {
+  background:linear-gradient(90deg,#ff3b3b,#ff0000);
+  color:white;
+  padding:15px;
+  font-size:20px;
+}
+
+.container {
+  max-width:800px;
+  margin:auto;
+  padding:15px;
+}
+
+img {
+  width:100%;
+  border-radius:12px;
+}
+
+.section {
+  background:white;
+  padding:15px;
+  margin-top:15px;
+  border-radius:12px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+.timeline div {
+  background:#fafafa;
+  margin:8px 0;
+  padding:10px;
+  border-radius:8px;
+}
+
+.vocab div {
+  background:#fafafa;
+  margin:8px 0;
+  padding:10px;
+  border-radius:8px;
+}
+
+button {
+  padding:10px 20px;
+  background:red;
+  color:white;
+  border:none;
+  border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>PulseGurgaon</header>
+
+<div class="container" id="article"></div>
+
+<script>
+
+/* GET ID FROM URL */
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+/* LOAD ARTICLE */
+async function loadArticle(){
+  let res = await fetch('/api/news');
+  let data = await res.json();
+
+  let n = data.find(x => x.id === id);
+
+  if(!n){
+    document.getElementById("article").innerHTML = "<h2>Article not found</h2>";
+    return;
+  }
+
+  document.getElementById("article").innerHTML = `
+    <h1>${n.title}</h1>
+
+    <div style="color:gray;margin-bottom:10px">
+      ${n.category} • ${new Date(n.date).toLocaleString()}
+    </div>
+
+    ${n.image ? `<img src="${n.image}">` : ""}
+
+    <div class="section">
+      <h3>⚡ Key Points</h3>
+      <ul>
+        ${JSON.parse(n.summary).map(p=>`<li>${p}</li>`).join('')}
+      </ul>
+    </div>
+
+    <div class="section">
+      <h3>📰 Full Article</h3>
+      <p>${n.content}</p>
+    </div>
+
+    <div class="section timeline">
+      <h3>📊 Timeline</h3>
+      ${JSON.parse(n.timeline).map(t=>`<div>${t}</div>`).join('')}
+    </div>
+
+    <div class="section vocab">
+      <h3>📘 Vocabulary</h3>
+      ${JSON.parse(n.vocab).map(v=>`
+        <div><b>${v.word}</b> — ${v.meaning}</div>
+      `).join('')}
+    </div>
+
+    <div style="margin-top:20px;text-align:center">
+      <button onclick="window.location.href='/'">⬅ Back</button>
+    </div>
+  `;
+}
+
+loadArticle();
+
+</script>
+
+</body>
+</html>
