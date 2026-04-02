@@ -1,129 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PulseGurgaon</title>
 
 <style>
-body { margin:0; font-family:sans-serif; background:#f4f6f9; }
+body {
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background:#f5f7fb;
+}
 
 /* HEADER */
 header {
   background: linear-gradient(90deg,#ff3b3b,#ff0000);
   color:white;
-  padding:15px;
+  padding:15px 20px;
   font-size:22px;
   font-weight:bold;
-}
-
-/* TICKER */
-.ticker {
-  background:#111;
-  color:#fff;
-  padding:8px;
-  white-space:nowrap;
-  overflow:hidden;
-}
-.ticker span {
-  display:inline-block;
-  padding-left:100%;
-  animation:scroll 12s linear infinite;
-}
-@keyframes scroll {
-  0%{transform:translateX(0)}
-  100%{transform:translateX(-100%)}
 }
 
 /* NAV */
 .nav {
   display:flex;
-  overflow-x:auto;
-  background:#fff;
+  gap:10px;
   padding:10px;
+  background:white;
 }
+
 .nav button {
-  margin-right:10px;
-  padding:8px 15px;
+  padding:8px 14px;
   border:none;
   border-radius:20px;
   background:#eee;
+  cursor:pointer;
 }
-.nav .active { background:red; color:white; }
+
+.nav button.active {
+  background:red;
+  color:white;
+}
 
 /* SEARCH */
 .search {
   display:flex;
   padding:10px;
   background:white;
+  gap:10px;
 }
+
 .search input {
   flex:1;
   padding:10px;
   border-radius:10px;
   border:1px solid #ccc;
 }
+
 .search button {
-  margin-left:10px;
-  padding:10px;
   background:red;
   color:white;
   border:none;
+  padding:10px 15px;
   border-radius:10px;
 }
 
-/* CARDS */
-.container { padding:10px; }
+/* GRID */
+.container {
+  display:grid;
+  grid-template-columns: repeat(auto-fit,minmax(300px,1fr));
+  gap:15px;
+  padding:15px;
+}
+
+/* CARD */
 .card {
   background:white;
-  margin-bottom:10px;
-  padding:15px;
   border-radius:12px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  padding:15px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  cursor:pointer;
+  transition:0.2s;
 }
+
+.card:hover {
+  transform:translateY(-4px);
+}
+
 .category {
   font-size:12px;
   color:red;
   font-weight:bold;
 }
+
 .card img {
   width:100%;
   border-radius:10px;
   margin:10px 0;
 }
-
-/* ARTICLE */
-.article { padding:15px; }
-.timeline { margin-top:20px; }
-.timeline div {
-  background:#fff;
-  margin-bottom:8px;
-  padding:10px;
-  border-radius:8px;
-}
-
-/* BLOG */
-.blog { padding:15px; }
-
-/* ADMIN */
-.admin {
-  padding:15px;
-}
-.admin input, .admin textarea {
-  width:100%;
-  margin-bottom:10px;
-  padding:10px;
-}
-.admin button {
-  padding:10px;
-  background:red;
-  color:white;
-  border:none;
-}
-
-/* HIDE */
-.page { display:none; }
-.activePage { display:block; }
 
 </style>
 </head>
@@ -132,134 +105,52 @@ header {
 
 <header>PulseGurgaon</header>
 
-<div class="ticker"><span>🔥 Breaking: AI reshaping global news • Markets volatile • Tech booming</span></div>
-
 <div class="nav">
-<button onclick="showPage('home')" class="active">Home</button>
-<button onclick="showPage('blogs')">Blogs</button>
-<button onclick="showPage('admin')">Admin</button>
+  <button class="active">All</button>
+  <button>India</button>
+  <button>World</button>
+  <button>Tech</button>
+  <button>Finance</button>
 </div>
 
 <div class="search">
-<input id="searchInput" placeholder="Search or ask AI...">
-<button onclick="aiSearch()">Search</button>
+  <input id="search" placeholder="Search or ask AI...">
+  <button onclick="searchAI()">Search</button>
 </div>
 
-<!-- HOME -->
-<div id="home" class="page activePage container"></div>
-
-<!-- ARTICLE -->
-<div id="article" class="page article"></div>
-
-<!-- BLOG LIST -->
-<div id="blogs" class="page blog"></div>
-
-<!-- BLOG DETAIL -->
-<div id="blogDetail" class="page blog"></div>
-
-<!-- ADMIN -->
-<div id="admin" class="page admin">
-<h2>Admin Panel</h2>
-<input id="blogTitle" placeholder="Blog title">
-<textarea id="blogContent" placeholder="Blog content"></textarea>
-<button onclick="createBlog()">Create Blog</button>
-</div>
+<div class="container" id="news"></div>
 
 <script>
 
-/* PAGE SWITCH */
-function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('activePage'));
-  document.getElementById(id).classList.add('activePage');
-}
-
-/* LOAD NEWS */
 async function loadNews(){
   let res = await fetch('/api/news');
   let data = await res.json();
 
-  document.getElementById('home').innerHTML = data.map(n=>`
-    <div class="card" onclick="window.location.href='article.html?id=${n.id}'">
-      <div class="category">${n.category}</div>
-      <h3>${n.title}</h3>
-      ${n.image ? `<img src="${n.image}">` : ""}
-      <p>${JSON.parse(n.summary)[0]}</p>
-    </div>
-  `).join('');
+  document.getElementById("news").innerHTML =
+    data.map(n=>`
+      <div class="card" onclick="openArticle('${n.id}')">
+        <div class="category">${n.category}</div>
+        <h3>${n.title}</h3>
+        ${n.image ? `<img src="${n.image}">` : ""}
+        <p>${JSON.parse(n.summary)[0]}</p>
+      </div>
+    `).join('');
 }
 
-/* OPEN ARTICLE */
-async function openArticle(id){
-  let res = await fetch('/api/news');
-  let data = await res.json();
-  let n = data.find(x=>x.id===id);
-
-  showPage('article');
-
-  document.getElementById('article').innerHTML = `
-    <h2>${n.title}</h2>
-    <img src="${n.image}">
-    <ul>${JSON.parse(n.summary).map(p=>`<li>${p}</li>`).join('')}</ul>
-    <p>${n.content}</p>
-
-    <div class="timeline">
-      <h3>Timeline</h3>
-      ${JSON.parse(n.timeline).map(t=>`<div>${t}</div>`).join('')}
-    </div>
-  `;
+function openArticle(id){
+  window.location.href = "article.html?id=" + id;
 }
 
-/* BLOGS */
-async function loadBlogs(){
-  let res = await fetch('/api/blogs');
-  let data = await res.json();
+async function searchAI(){
+  let q = document.getElementById("search").value;
 
-  document.getElementById('blogs').innerHTML = data.map(b=>`
-    <div class="card" onclick="openBlog('${b.id}')">
-      <h3>${b.title}</h3>
-    </div>
-  `).join('');
-}
-
-async function openBlog(id){
-  let res = await fetch('/api/blogs');
-  let data = await res.json();
-  let b = data.find(x=>x.id===id);
-
-  showPage('blogDetail');
-
-  document.getElementById('blogDetail').innerHTML = `
-    <h2>${b.title}</h2>
-    <p>${b.content}</p>
-  `;
-}
-
-/* ADMIN CREATE BLOG */
-async function createBlog(){
-  let title = document.getElementById('blogTitle').value;
-  let content = document.getElementById('blogContent').value;
-
-  await fetch('/api/blogs',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({title,content})
-  });
-
-  alert("Blog Created");
-}
-
-/* AI SEARCH */
-async function aiSearch(){
-  let q = document.getElementById('searchInput').value;
   let res = await fetch('/api/ai-search?q='+q);
   let data = await res.json();
 
   alert(JSON.stringify(data,null,2));
 }
 
-/* INIT */
 loadNews();
-loadBlogs();
 
 </script>
 
