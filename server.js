@@ -5,11 +5,13 @@ const sqlite3 = require("sqlite3").verbose();
 const crypto = require("crypto");
 const cron = require("node-cron");
 const cors = require("cors");
+const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
 
@@ -18,6 +20,7 @@ const PORT = process.env.PORT || 3000;
 const db = new sqlite3.Database("news.db");
 
 db.serialize(() => {
+  db.run("PRAGMA journal_mode = WAL;");
 
   db.run(`CREATE TABLE IF NOT EXISTS articles (
     id TEXT PRIMARY KEY,
@@ -50,7 +53,6 @@ db.serialize(() => {
     key TEXT PRIMARY KEY,
     value TEXT
   )`);
-
 });
 
 /* ================= RSS ================= */
@@ -77,6 +79,8 @@ const KEYS = [
   process.env.OPENROUTER_KEY5,
   process.env.OPENROUTER_KEY6
 ].filter(Boolean);
+
+console.log("AI Keys Loaded:", KEYS.length);
 
 let keyIndex = 0;
 
@@ -112,7 +116,11 @@ Text: ${text}`
         }
       );
 
-      return JSON.parse(res.data.choices[0].message.content);
+      try {
+        return JSON.parse(res.data.choices[0].message.content);
+      } catch {
+        return null;
+      }
 
     } catch (e) {
       continue;
@@ -172,7 +180,15 @@ async function fetchNews() {
               detectCategory(item.title),
               item.enclosure?.url || "",
               item.pubDate || new Date().toISOString()
-            ]
+            ],
+            () => {
+              db.run(`
+                DELETE FROM articles 
+                WHERE id NOT IN (
+                  SELECT id FROM articles ORDER BY date DESC LIMIT 600
+                )
+              `);
+            }
           );
         });
 
@@ -183,7 +199,7 @@ async function fetchNews() {
   }
 }
 
-/* ================= BLOG APIs ================= */
+/* ================= BLOG ================= */
 
 app.get("/api/blogs", (req,res)=>{
   db.all("SELECT * FROM blogs ORDER BY date DESC", [], (e,r)=>res.json(r));
@@ -194,14 +210,7 @@ app.post("/api/blogs", (req,res)=>{
 
   db.run(
     `INSERT INTO blogs VALUES (?,?,?,?,?,?)`,
-    [
-      uuidv4(),
-      title,
-      content,
-      "",
-      "General",
-      new Date().toISOString()
-    ]
+    [uuidv4(), title, content, "", "General", new Date().toISOString()]
   );
 
   res.json({status:"ok"});
@@ -221,11 +230,7 @@ app.get("/api/ads", (req,res)=>{
 app.post("/api/ads", (req,res)=>{
   const {image,link} = req.body;
 
-  db.run(
-    `INSERT INTO ads VALUES (?,?,?)`,
-    [uuidv4(), image, link]
-  );
-
+  db.run(`INSERT INTO ads VALUES (?,?,?)`, [uuidv4(), image, link]);
   res.json({status:"ok"});
 });
 
@@ -276,19 +281,12 @@ app.get("/api/fetch-news", async (req,res)=>{
 /* ================= BLOG AUTO ================= */
 
 async function generateBlog(){
-  const ai = await aiGenerate("Write a blog on latest world trends");
+  const ai = await aiGenerate("Write a blog on latest global trends");
   if(!ai) return;
 
   db.run(
     `INSERT INTO blogs VALUES (?,?,?,?,?,?)`,
-    [
-      uuidv4(),
-      ai.title,
-      ai.article,
-      "",
-      "General",
-      new Date().toISOString()
-    ]
+    [uuidv4(), ai.title, ai.article, "", "General", new Date().toISOString()]
   );
 }
 
@@ -296,6 +294,16 @@ async function generateBlog(){
 
 cron.schedule("*/30 * * * *", fetchNews);
 cron.schedule("0 */2 * * *", generateBlog);
+
+/* ================= FIRST RUN ================= */
+
+fetchNews();
+
+/* ================= FRONTEND ROUTE ================= */
+
+app.get("/", (req,res)=>{
+  res.sendFile(path.join(__dirname,"index.html"));
+});
 
 /* ================= START ================= */
 
