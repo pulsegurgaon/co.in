@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin - PulseGurgaon</title>
+
+<style>
+body { margin:0; font-family:sans-serif; background:#f4f6f9; }
+
+/* HEADER */
+header {
+  background:linear-gradient(90deg,#ff3b3b,#ff0000);
+  color:white;
+  padding:15px;
+  font-size:20px;
+}
+
+/* LOGIN */
+.login {
+  max-width:300px;
+  margin:80px auto;
+  background:white;
+  padding:20px;
+  border-radius:12px;
+}
+input, textarea {
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+button {
+  padding:10px;
+  background:red;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+/* DASHBOARD */
+.dashboard {
+  display:none;
+  padding:15px;
+}
+.section {
+  background:white;
+  padding:15px;
+  margin-bottom:15px;
+  border-radius:12px;
+}
+.card {
+  padding:10px;
+  border-bottom:1px solid #eee;
+}
+</style>
+</head>
+
+<body>
+
+<header>Admin Panel</header>
+
+<!-- LOGIN -->
+<div class="login" id="loginBox">
+  <h2>Login</h2>
+  <input id="user" placeholder="Username">
+  <input id="pass" placeholder="Password" type="password">
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard" id="dashboard">
+
+  <!-- BLOG CREATE -->
+  <div class="section">
+    <h3>Create Blog</h3>
+    <input id="blogTitle" placeholder="Title">
+    <textarea id="blogContent" placeholder="Content"></textarea>
+    <button onclick="createBlog()">Create</button>
+  </div>
+
+  <!-- BLOG LIST -->
+  <div class="section">
+    <h3>All Blogs</h3>
+    <div id="blogList"></div>
+  </div>
+
+  <!-- TICKER -->
+  <div class="section">
+    <h3>Update Ticker</h3>
+    <input id="tickerText" placeholder="Breaking news text">
+    <button onclick="updateTicker()">Update</button>
+  </div>
+
+  <!-- ADS -->
+  <div class="section">
+    <h3>Ads</h3>
+    <input id="adImage" placeholder="Image URL">
+    <input id="adLink" placeholder="Redirect Link">
+    <button onclick="addAd()">Add Ad</button>
+    <div id="adList"></div>
+  </div>
+
+  <!-- MANUAL REFRESH -->
+  <div class="section">
+    <h3>System</h3>
+    <button onclick="refreshNews()">Fetch Latest News</button>
+  </div>
+
+</div>
+
+<script>
+
+/* LOGIN */
+function login(){
+  let u = document.getElementById("user").value;
+  let p = document.getElementById("pass").value;
+
+  if(u === "admin" && p === "rishabh1745T"){
+    document.getElementById("loginBox").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    loadBlogs();
+    loadAds();
+  } else {
+    alert("Wrong credentials");
+  }
+}
+
+/* CREATE BLOG */
+async function createBlog(){
+  let title = document.getElementById("blogTitle").value;
+  let content = document.getElementById("blogContent").value;
+
+  await fetch('/api/blogs',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({title,content})
+  });
+
+  alert("Blog Created");
+  loadBlogs();
+}
+
+/* LOAD BLOGS */
+async function loadBlogs(){
+  let res = await fetch('/api/blogs');
+  let data = await res.json();
+
+  document.getElementById("blogList").innerHTML = data.map(b=>`
+    <div class="card">
+      ${b.title}
+      <button onclick="deleteBlog('${b.id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+/* DELETE BLOG */
+async function deleteBlog(id){
+  await fetch('/api/blogs/'+id,{method:'DELETE'});
+  loadBlogs();
+}
+
+/* TICKER */
+async function updateTicker(){
+  let text = document.getElementById("tickerText").value;
+
+  await fetch('/api/ticker',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({text})
+  });
+
+  alert("Ticker Updated");
+}
+
+/* ADS */
+async function addAd(){
+  let image = document.getElementById("adImage").value;
+  let link = document.getElementById("adLink").value;
+
+  await fetch('/api/ads',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({image,link})
+  });
+
+  loadAds();
+}
+
+async function loadAds(){
+  let res = await fetch('/api/ads');
+  let data = await res.json();
+
+  document.getElementById("adList").innerHTML = data.map(a=>`
+    <div class="card">
+      <img src="${a.image}" width="100">
+      <button onclick="deleteAd('${a.id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function deleteAd(id){
+  await fetch('/api/ads/'+id,{method:'DELETE'});
+  loadAds();
+}
+
+/* REFRESH NEWS */
+async function refreshNews(){
+  await fetch('/api/fetch-news');
+  alert("News refreshed");
+}
+
+</script>
+
+</body>
+</html>
